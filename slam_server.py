@@ -15,14 +15,14 @@ def start_slam():
     cam_intrinsics = data['camera_intrinsics']
     video_filepath = data['video_filepath']
 
-    cam = PinholeCamera(cam_intrinsics['Camera.width'],
-                        cam_intrinsics['Camera.height'],
-                        cam_intrinsics['Camera.fx'],
-                        cam_intrinsics['Camera.fy'],
-                        cam_intrinsics['Camera.cx'],
-                        cam_intrinsics['Camera.cy'],
+    cam = PinholeCamera(cam_intrinsics['width'],
+                        cam_intrinsics['height'],
+                        cam_intrinsics['fx'],
+                        cam_intrinsics['fy'],
+                        cam_intrinsics['cx'],
+                        cam_intrinsics['cy'],
                         cam_intrinsics['DistCoef'],
-                        cam_intrinsics['Camera.fps']
+                        cam_intrinsics['fps']
                         )
 
     dataset = VideoDataset(path=video_filepath, name='video', type=DatasetType.VIDEO)
