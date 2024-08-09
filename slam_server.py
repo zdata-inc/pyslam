@@ -12,7 +12,7 @@ slam_system = VisualSLAMSystem()
 @app.route('/slam/start', methods=['POST'])
 def start_slam():
     data = request.json
-    cam_intrinsics = data['cam_intrinsics']
+    cam_intrinsics = data['camera_intrinsics']
     video_filepath = data['video_filepath']
 
     cam = PinholeCamera(cam_intrinsics['Camera.width'],
