@@ -27,7 +27,9 @@ from feature_tracker import feature_tracker_factory, FeatureTrackerTypes
 from feature_tracker_configs import FeatureTrackerConfigs
 from slam import Slam
 
-if __name__ == "__main__":
+slam = None
+
+def start_slam():
     config = Config()
 
     dataset = dataset_factory(config.dataset_settings)
@@ -37,25 +39,21 @@ if __name__ == "__main__":
                         config.cam_settings['Camera.cx'], config.cam_settings['Camera.cy'],
                         config.DistCoef, config.cam_settings['Camera.fps'])
 
-    num_features=2000
+    num_features = 2000
 
-    tracker_type = FeatureTrackerTypes.DES_BF      # descriptor-based, brute force matching with knn
-    #tracker_type = FeatureTrackerTypes.DES_FLANN  # descriptor-based, FLANN-based matching
-
-    # select your tracker configuration (see the file feature_tracker_configs.py) 
-    # FeatureTrackerConfigs: SHI_TOMASI_ORB, FAST_ORB, ORB, ORB2, ORB2_FREAK, ORB2_BEBLID, BRISK, AKAZE, FAST_FREAK, SIFT, ROOT_SIFT, SURF, SUPERPOINT, FAST_TFEAT, CONTEXTDESC, LIGHTGLUE, XFEAT, XFEAT_XFEAT
-    # WARNING: At present, SLAM is not able to support LOFTR and other "pure" image matchers (further details in the commenting notes of LOFTR in feature_tracker_configs.py).
+    tracker_type = FeatureTrackerTypes.DES_BF
     tracker_config = FeatureTrackerConfigs.TEST
     tracker_config['num_features'] = num_features
     tracker_config['tracker_type'] = tracker_type
-
-    print('tracker_config: ',tracker_config)
     feature_tracker = feature_tracker_factory(**tracker_config)
 
-    # create SLAM object 
+    # create SLAM object
     slam = Slam(cam, feature_tracker, None)
 
-    img_id = 0  #180, 340, 400   # you can start from a desired frame id if needed 
+    # create Viewer object
+    # viewer3D = Viewer3D()
+
+    img_id = 0  #180, 340, 400   # you can start from a desired frame id if needed
     while dataset.isOk():
         print('..................................')
         print('image: ', img_id)
@@ -68,8 +66,11 @@ if __name__ == "__main__":
 
         time_start = time.time()
         slam.track(img, img_id, timestamp)  # main SLAM function
-
         duration = time.time()-time_start
+
+        # img_draw = slam.map.draw_feature_trails(img)
+        # cv2.imshow('Camera', img_draw)
+        # viewer3D.draw_map(slam)
 
         if(frame_duration > duration):
             print('sleeping for frame')
@@ -79,3 +80,30 @@ if __name__ == "__main__":
 
     slam.quit()
 
+
+def get_frames(idx: int = None):
+    frames = []
+
+    if idx is not None:
+        # Handle single frame retrieval
+        frame = {}
+        frame_data = slam.map.frames[idx]
+        good_indexes = [i for i, p in enumerate(frame_data.points) if p is not None and not p.is_bad]
+
+        frame['points'] = [frame_data.points[i].pt for i in good_indexes]
+        frame['kps'] = [frame_data.kps[i] for i in good_indexes]
+        frame['pose'] = frame_data.Twc
+
+        return [frame]
+
+    else:
+        # Handle retrieval of all frames
+        for idx in range(len(slam.map.frames)):
+            frame = get_frames(idx=idx)[0]  # Get the single frame from the list
+            frames.append(frame)
+
+    return frames
+
+
+if __name__ == "__main__":
+    start_slam()
