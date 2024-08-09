@@ -13,7 +13,8 @@ slam_system = VisualSLAMSystem()
 def start_slam():
     data = request.json
     cam_intrinsics = data['camera_intrinsics']
-    video_filepath = data['video_filepath']
+    video_dir = data['video_dir']
+    video_filename = data['video_filename']
 
     cam = PinholeCamera(cam_intrinsics['width'],
                         cam_intrinsics['height'],
@@ -25,7 +26,7 @@ def start_slam():
                         cam_intrinsics['fps']
                         )
 
-    dataset = VideoDataset(path=video_filepath, name='video', type=DatasetType.VIDEO)
+    dataset = VideoDataset(path=video_dir, name=video_filename, type=DatasetType.VIDEO)
 
     slam_system.start(cam=cam, dataset=dataset)
 
@@ -55,6 +56,7 @@ def get_frame_by_idx():
 
 
 @app.route('/slam/get_all_frames', methods=['POST'])
+
 def get_all_frames():
     frames = slam_system.get_frames()
 
