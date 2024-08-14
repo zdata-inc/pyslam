@@ -64,7 +64,8 @@ def get_new_frames():
 
     frames = [frame for frame in frames if frame['id'] >= curr_frame_id]
 
-    curr_frame_id = frames[-1]['id'] + 1
+    if len(frames) > 0:
+        curr_frame_id = frames[-1]['id'] + 1
 
     return serialize_frames(frames)
 
