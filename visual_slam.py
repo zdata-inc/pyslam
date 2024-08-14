@@ -5,6 +5,7 @@ from feature_tracker import feature_tracker_factory, FeatureTrackerTypes
 from feature_tracker_configs import FeatureTrackerConfigs
 from slam import Slam
 import threading
+from viewer3D import Viewer3D
 
 
 class VisualSLAMSystem:
@@ -16,6 +17,7 @@ class VisualSLAMSystem:
         self.slam = None
         self.dataset = None
         self.cam = None
+        self.is_running = False
 
     def start(self, cam: PinholeCamera, dataset: Dataset):
         self.cam = cam
@@ -26,7 +28,11 @@ class VisualSLAMSystem:
         thread = threading.Thread(target=self._run_slam)
         thread.start()
 
+        self.is_running = True
+
     def _run_slam(self):
+        viewer3D = Viewer3D()
+
         img_id = 0
         while self.dataset.isOk():
             print(f'Processing image: {img_id}')
@@ -40,6 +46,8 @@ class VisualSLAMSystem:
             self.slam.track(img, img_id, timestamp)
             duration = time.time() - time_start
 
+            viewer3D.draw_map(self.slam)
+
             if frame_duration > duration:
                 time.sleep(frame_duration - duration)
 
@@ -50,16 +58,18 @@ class VisualSLAMSystem:
     def stop(self):
         if self.slam:
             self.slam.quit()
+            self.is_running = False
 
     def get_frames(self, idx=None):
         frames = []
-        if idx is not None:
-            frame = self._extract_frame_data(idx)
-            return [frame]
-        else:
+
+        if idx is None:
             for idx in range(len(self.slam.map.frames)):
                 frame = self._extract_frame_data(idx)
                 frames.append(frame)
+        else:
+            frame = self._extract_frame_data(idx)
+            return [frame]
 
         return frames
 

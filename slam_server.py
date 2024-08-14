@@ -8,6 +8,15 @@ from camera import PinholeCamera
 app = Flask(__name__)
 slam_system = VisualSLAMSystem()
 
+curr_frame_id = 0
+
+
+def serialize_frames(frames):
+    serialized_pred = pickle.dumps(frames)
+    base64_pred = base64.b64encode(serialized_pred).decode('utf-8')
+
+    return jsonify(serialized_data=base64_pred)
+
 
 @app.route('/slam/start', methods=['POST'])
 def start_slam():
@@ -33,10 +42,11 @@ def start_slam():
     return Response(status=204)
 
 
-def serialize_frames(frames):
-    serialized_pred = pickle.dumps(frames)
-    base64_pred = base64.b64encode(serialized_pred).decode('utf-8')
-    return jsonify(serialized_data=base64_pred)
+@app.route('/slam/is_running', methods=['POST'])
+def is_running():
+    running = slam_system.is_running
+
+    return jsonify(is_running=running)
 
 
 @app.route('/slam/get_last_frame', methods=['POST'])
@@ -46,17 +56,20 @@ def get_last_frame():
     return serialize_frames(frames)
 
 
-@app.route('/slam/get_frame_by_idx', methods=['POST'])
-def get_frame_by_idx():
-    data = request.json
-    idx = data['idx']
-    frames = slam_system.get_frames(idx=idx)
+@app.route('/slam/get_new_frames', methods=['POST'])
+def get_new_frames():
+    global curr_frame_id
+
+    frames = slam_system.get_frames()
+
+    frames = [frame for frame in frames if frame['id'] >= curr_frame_id]
+
+    curr_frame_id = frames[-1]['id'] + 1
 
     return serialize_frames(frames)
 
 
 @app.route('/slam/get_all_frames', methods=['POST'])
-
 def get_all_frames():
     frames = slam_system.get_frames()
 
