@@ -38,6 +38,10 @@ class VisualSLAMSystem:
             print(f'Processing image: {img_id}')
 
             img = self.dataset.getImageColor(img_id)
+
+            if img is None:
+                break
+
             timestamp = self.dataset.getTimestamp()
             next_timestamp = self.dataset.getNextTimestamp()
             frame_duration = next_timestamp - timestamp
