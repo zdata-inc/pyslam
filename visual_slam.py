@@ -1,10 +1,13 @@
+import threading
 import time
+
+import numpy as np
+
 from camera import PinholeCamera
-from dataset import VideoDataset, Dataset
+from dataset import Dataset
 from feature_tracker import feature_tracker_factory, FeatureTrackerTypes
 from feature_tracker_configs import FeatureTrackerConfigs
 from slam import Slam
-import threading
 from viewer3D import Viewer3D
 
 
@@ -64,11 +67,26 @@ class VisualSLAMSystem:
             self.slam.quit()
             self.is_running = False
 
+
+    def get_new_frames(self, start_idx=None):
+        frames = []
+
+        num_frames = len(self.slam.map.get_keyframes())
+
+        for idx in range(start_idx, num_frames):
+            frame = self._extract_frame_data(idx)
+            frames.append(frame)
+
+        return frames
+
+
     def get_frames(self, idx=None):
         frames = []
 
+        num_frames = len(self.slam.map.frames)
+
         if idx is None:
-            for idx in range(len(self.slam.map.frames)):
+            for idx in range(num_frames):
                 frame = self._extract_frame_data(idx)
                 frames.append(frame)
         else:
@@ -79,13 +97,17 @@ class VisualSLAMSystem:
 
     def _extract_frame_data(self, idx):
         frame = {}
-        frame_data = self.slam.map.frames[idx]
-        good_indexes = [i for i, p in enumerate(frame_data.points) if p is not None and not p.is_bad]
 
-        frame['points'] = [frame_data.points[i].pt for i in good_indexes]
-        frame['kps'] = [frame_data.kps[i] for i in good_indexes]
-        frame['pose'] = frame_data.Twc
-        frame['id'] = frame_data.id
+        frame_data = self.slam.map.get_keyframes()[idx]
+
+        with self.slam.map.lock:
+            good_indexes = [i for i, p in enumerate(frame_data.points) if p is not None and not p.is_bad]
+
+            map_points = frame_data.points[good_indexes].tolist()
+            frame['points'] = np.array([map_point.pt for map_point in map_points])
+            frame['kps'] = frame_data.kps[good_indexes]
+            frame['pose'] = frame_data.Twc
+            frame['id'] = frame_data.id
 
         return frame
 

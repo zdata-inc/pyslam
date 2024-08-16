@@ -8,7 +8,7 @@ from camera import PinholeCamera
 app = Flask(__name__)
 slam_system = VisualSLAMSystem()
 
-curr_frame_id = 0
+curr_frame_idx = 0
 
 
 def serialize_frames(frames):
@@ -58,14 +58,11 @@ def get_last_frame():
 
 @app.route('/slam/get_new_frames', methods=['POST'])
 def get_new_frames():
-    global curr_frame_id
+    global curr_frame_idx
 
-    frames = slam_system.get_frames()
+    frames = slam_system.get_new_frames(start_idx=curr_frame_idx)
 
-    frames = [frame for frame in frames if frame['id'] >= curr_frame_id]
-
-    if len(frames) > 0:
-        curr_frame_id = frames[-1]['id'] + 1
+    curr_frame_idx += len(frames)
 
     return serialize_frames(frames)
 
